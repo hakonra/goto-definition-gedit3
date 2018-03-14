@@ -55,11 +55,32 @@ class GoToDefinitionPlugin(GObject.Object, Gedit.WindowActivatable):
 	
 	def __init__(self):
 		GObject.Object.__init__(self)
+		self.floppy_loc = READTAGS_PATH + '/go-to-definition.save'
 		self.root_directory = ''
 		self.jump_document = None
 		self.word_length = 0
 		self.tag_list = []
-	
+
+		self.maybe_load_root_dir_from_file()
+
+	def maybe_load_root_dir_from_file(self):
+		try:
+			with open(self.floppy_loc) as floppy:
+				d = floppy.readline()
+				if len(d) > 0:
+					if d[-1] == '\n':
+						d = d[:-1]
+
+					if len(d) > 0:
+						self.root_directory = d
+						self.generate_tags()
+		except FileNotFoundError:
+			pass
+
+	def save_root_dir_to_file(self, root_dir):
+		with open(self.floppy_loc, 'w') as floppy:
+			floppy.write(root_dir + '\n')
+
 	def do_activate(self):
 		self.add_menu()
 		self.do_update_state()
@@ -127,6 +148,7 @@ class GoToDefinitionPlugin(GObject.Object, Gedit.WindowActivatable):
 		if response == Gtk.ResponseType.OK:
 			self.root_directory = dialog.get_filename()
 			self.generate_tags()
+			self.save_root_dir_to_file(self.root_directory)
 		elif response == Gtk.ResponseType.CANCEL:
 			pass
 		dialog.destroy()
