@@ -56,6 +56,7 @@ class GoToDefinitionPlugin(GObject.Object, Gedit.WindowActivatable):
 	def __init__(self):
 		GObject.Object.__init__(self)
 		self.floppy_loc = READTAGS_PATH + '/go-to-definition.save'
+		self.tags_path = READTAGS_PATH + '/go-to-definition.tags'
 		self.root_directory = ''
 		self.jump_document = None
 		self.word_length = 0
@@ -165,13 +166,13 @@ class GoToDefinitionPlugin(GObject.Object, Gedit.WindowActivatable):
 		self.show_info_message("Refresh Completed", "The tags have been updated.")
 	
 	def generate_tags(self):
-		# Generates .tags file in the current root folder
+		# Generates .tags file in tags_path
 		os.chdir(self.root_directory)
 		#The command part will be updated soon for other languages
-		command = ['ctags','--fields=+n-k-a-f-i-K-l-m-s-S-z-t', '--c-kinds=+dfmplstuv', '-R', '-f', '.tags']
+		command = ['ctags','--fields=+n-k-a-f-i-K-l-m-s-S-z-t', '--c-kinds=+dfmplstuv', '-R', '-f', self.tags_path]
 		# MBO replaced popen call by check call because we must wait .tags file to be fully created before parsing it
 		subprocess.check_call(command)
-		command = 'grep -v ! .tags | cut -f 1 | uniq'
+		command = 'grep -v ! ' + self.tags_path + ' | cut -f 1 | uniq'
 		output = subprocess.Popen(command, stdout=subprocess.PIPE, shell=True).communicate()[0]
 		output = output.decode()
 		output = output.split('\n')
@@ -282,7 +283,7 @@ class GoToDefinitionPlugin(GObject.Object, Gedit.WindowActivatable):
 		#right one cannot be decided then a box with all options is shown.
 		#Pressing ENTER on the selected one will take you to it.
 		
-		tagfile_uri = helper.get_proper_path(self.root_directory) + '/.tags' 
+		tagfile_uri = helper.get_proper_path(self.tags_path)
 		os.chdir(READTAGS_PATH)
 		command = "./readtags -e -t " + tagfile_uri + " " + word
 		result = subprocess.Popen(command, stdout=subprocess.PIPE, shell=True).communicate()[0]
